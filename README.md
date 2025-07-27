@@ -1,93 +1,129 @@
-# Challenge 1b: Multi-Collection PDF Analysis
+Adobe Hackathon - Multi-Collection PDF Analyzer
 
-## Overview
-Advanced PDF analysis solution that processes multiple document collections and extracts relevant content based on specific personas and use cases.
+Purpose
+-------
+This script analyzes multiple PDF collections based on a given persona and task (like finding dietary-specific recipes or extracting key content). It processes each PDF, scores its relevance using extracted keywords, summarizes content, and outputs the results in structured JSON files.
 
-## Project Structure
-```
-Challenge_1b/
-├── Collection 1/                    # Travel Planning
-│   ├── PDFs/                       # South of France guides
-│   ├── challenge1b_input.json      # Input configuration
-│   └── challenge1b_output.json     # Analysis results
-├── Collection 2/                    # Adobe Acrobat Learning
-│   ├── PDFs/                       # Acrobat tutorials
-│   ├── challenge1b_input.json      # Input configuration
-│   └── challenge1b_output.json     # Analysis results
-├── Collection 3/                    # Recipe Collection
-│   ├── PDFs/                       # Cooking guides
-│   ├── challenge1b_input.json      # Input configuration
-│   └── challenge1b_output.json     # Analysis results
-└── README.md
-```
+Libraries Used
+--------------
+- os        : Access environment variables, handle file paths
+- re        : Regular expressions for cleaning and searching text
+- json      : Reading/writing JSON files
+- datetime  : Timestamps
+- pathlib   : File and folder path handling
+- typing    : Type hinting (List, Dict, etc.)
+- fitz (PyMuPDF): PDF text extraction
 
-## Collections
+To install PyMuPDF:
+    pip install pymupdf
 
-### Collection 1: Travel Planning
-- **Challenge ID**: round_1b_002
-- **Persona**: Travel Planner
-- **Task**: Plan a 4-day trip for 10 college friends to South of France
-- **Documents**: 7 travel guides
+Folder Structure
+----------------
+Your directory should be structured like this:
 
-### Collection 2: Adobe Acrobat Learning
-- **Challenge ID**: round_1b_003
-- **Persona**: HR Professional
-- **Task**: Create and manage fillable forms for onboarding and compliance
-- **Documents**: 15 Acrobat guides
+.
+├── Collection1/
+│   ├── challenge1b_input.json
+│   └── PDFs/
+│       ├── file01.pdf
+│       └── file02.pdf
+├── Collection2/
+│   ├── challenge1b_input.json
+│   └── PDFs/
+│       └── ...
+└── analyzer.py
 
-### Collection 3: Recipe Collection
-- **Challenge ID**: round_1b_001
-- **Persona**: Food Contractor
-- **Task**: Prepare vegetarian buffet-style dinner menu for corporate gathering
-- **Documents**: 9 cooking guides
+Each Collection folder contains:
+- challenge1b_input.json : Includes persona, task, and documents
+- PDFs/ : Folder containing the actual PDF files
 
-## Input/Output Format
+How It Works
+------------
+1. main()
+   - Entry point
+   - Finds all Collection folders
+   - Calls process_collection() on each one
 
-### Input JSON Structure
-```json
-{
-  "challenge_info": {
-    "challenge_id": "round_1b_XXX",
-    "test_case_name": "specific_test_case"
-  },
-  "documents": [{"filename": "doc.pdf", "title": "Title"}],
-  "persona": {"role": "User Persona"},
-  "job_to_be_done": {"task": "Use case description"}
-}
-```
+2. Reads challenge1b_input.json:
+   - persona: e.g., "Nutritionist"
+   - job_to_be_done: e.g., "Find vegan high-protein recipes"
+   - documents: list of filenames
 
-### Output JSON Structure
-```json
+3. extract_keywords(task)
+   - Cleans text
+   - Extracts keywords longer than 3 characters
+
+4. read_pdf_by_page(pdf_path)
+   - Uses PyMuPDF
+   - Extracts text from each page
+   - Returns a dictionary of {page_number: page_text}
+
+5. score_text(text, keywords)
+   - Scores text based on keyword frequency
+
+6. extract_section_title(lines)
+   - Looks for uppercase lines as titles
+   - Defaults to the first line if no suitable title found
+
+7. extract_recipes_from_text(text)
+   - Looks for lines containing "recipe", "ingredients", or "instructions"
+   - Builds dictionary of ingredients and steps
+
+8. identify_dietary_needs(text) and meets_dietary_requirements(recipe, needs)
+   - Identifies dietary needs like "vegan", "gluten-free", etc.
+   - Filters recipes that violate those needs
+
+9. Output
+   - Writes challenge1b_output.json in each collection folder
+   - Includes:
+       - metadata
+       - extracted_sections (top ranked)
+       - subsection_analysis (trimmed summaries)
+
+Example Output
+--------------
 {
   "metadata": {
-    "input_documents": ["list"],
-    "persona": "User Persona",
-    "job_to_be_done": "Task description"
+    "persona": "Nutritionist",
+    "job_to_be_done": "Find vegan high-protein recipes",
+    "processing_timestamp": "2025-07-27T12:45:00"
   },
   "extracted_sections": [
     {
-      "document": "source.pdf",
-      "section_title": "Title",
-      "importance_rank": 1,
-      "page_number": 1
+      "document": "file01.pdf",
+      "section_title": "VEGAN PROTEIN RECIPES",
+      "importance_rank": 8,
+      "page_number": 3
     }
   ],
   "subsection_analysis": [
     {
-      "document": "source.pdf",
-      "refined_text": "Content",
-      "page_number": 1
+      "document": "file01.pdf",
+      "refined_text": "These recipes focus on beans, tofu, and lentils as primary protein sources...",
+      "page_number": 3
     }
   ]
 }
-```
 
-## Key Features
-- Persona-based content analysis
-- Importance ranking of extracted sections
-- Multi-collection document processing
-- Structured JSON output with metadata
+How to Run
+----------
+1. Install dependencies:
+    pip install pymupdf
 
----
+2. Place PDFs and challenge1b_input.json inside Collection folders
 
-**Note**: This README provides a brief overview of the Challenge 1b solution structure based on available sample data. 
+3. Run the script:
+    python analyzer.py
+
+Summary
+-------
+- Works on multiple collections
+- Extracts and ranks relevant PDF content
+- Filters based on persona needs and task
+- Outputs JSON with metadata, ranked sections, and summaries
+
+Optional Enhancements
+---------------------
+- Export as PDF
+- Highlight keywords in text
+- Add visual summaries
